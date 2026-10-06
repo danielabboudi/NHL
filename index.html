@@ -880,16 +880,31 @@ function renderTrajectory() {
       y0: 0, y1: 1,
       line: { color: SLATE_MID, width: 1, dash: 'dash' }, layer: 'below',
     }));
-    const annotations = seasons.map((yr, i) => ({
-      text: yr + '\u2013' + String((yr + 1) % 100).padStart(2, '0'), xref: 'x', yref: 'paper',
-      x: i * SEASON_SPAN + 11, y: 1.02, showarrow: false,
-      font: { size: 10.5, color: MUTED, weight: 700, family: FONT },
-    }));
+    // The x-axis ends exactly on the newest game played, so the lines always
+    // reach the right edge \u2014 no blank strip while a season is young.
+    // (Autorange used to stretch to fit a season label placed past the data.)
+    const allX = traces.flatMap(tr => tr.x);
+    const xLo = Math.min(...allX), xHi = Math.max(...allX);
+    // Each season's label is centred on the part of it that is on screen; a
+    // sliver at either edge pins its label to that edge instead.
+    const annotations = seasons.map((yr, i) => {
+      const lo = Math.max(i * SEASON_SPAN, xLo), hi = Math.min((i + 1) * SEASON_SPAN, xHi);
+      const sliver = (hi - lo) < 0.15 * (xHi - xLo);
+      const edge = sliver && i === seasons.length - 1 ? 'right' : sliver && i === 0 ? 'left' : 'center';
+      return {
+        text: yr + '\u2013' + String((yr + 1) % 100).padStart(2, '0'), xref: 'x', yref: 'paper',
+        x: edge === 'right' ? hi : edge === 'left' ? lo : (lo + hi) / 2, xanchor: edge,
+        y: 1.02, showarrow: false,
+        font: { size: 10.5, color: MUTED, weight: 700, family: FONT },
+      };
+    });
     document.getElementById('plot-traj').style.height = '460px';
     const layout = Object.assign({}, COMMON_LAYOUT, {
+      height: 460,   // explicit: Plotly.react otherwise keeps the previous view's height
       margin: { t: 26, b: 34, l: 38, r: 10 },
       shapes, annotations,
       xaxis: Object.assign({}, COMMON_AXIS, {
+        range: [xLo, xHi], autorange: false,
         title: { text: 'Season by season  (dashed line = new season)', font: { size: 11, color: MUTED, family: FONT } },
         showticklabels: false }),
       yaxis: Object.assign({}, COMMON_AXIS, {
@@ -898,12 +913,18 @@ function renderTrajectory() {
     Plotly.react('plot-traj', traces, layout, HARDEN);
   } else {
     const cols = 2, rowsN = Math.ceil(teams.length / cols), panelH = 110;
-    document.getElementById('plot-traj').style.height = (panelH * rowsN + 30) + 'px';
+    const H = panelH * rowsN + 30, M = { t: 24, b: 18, l: 24, r: 12 };
+    document.getElementById('plot-traj').style.height = H + 'px';
     const traces = [];
     const layout = Object.assign({}, COMMON_LAYOUT, {
-      grid: { rows: rowsN, columns: cols, pattern: 'independent', xgap: 0.06, ygap: 0.18 },
-      margin: { t: 24, b: 18, l: 24, r: 12 }, annotations: [], showlegend: false,
+      // Explicit height: Plotly.react otherwise keeps the overlay's 460px and
+      // crushes every panel into it.
+      height: H, margin: M, annotations: [], showlegend: false,
     });
+    // Each team gets its own cell — name on top, line underneath — so the
+    // label always sits over its own line.
+    const areaH = H - M.t - M.b, cellH = 1 / rowsN;
+    const LABEL = 16 / areaH, PAD = 10 / areaH, XGAP = 0.06;
     teams.forEach((t, i) => {
       const ax = i + 1;
       const s = DATA.trajectories[t];
@@ -919,13 +940,18 @@ function renderTrajectory() {
         hovertemplate: '<b>' + t + '</b><br>%{customdata}<br>rating %{y:.2f}<extra></extra>',
         xaxis: 'x' + (ax === 1 ? '' : ax), yaxis: 'y' + (ax === 1 ? '' : ax),
       });
-      layout['xaxis' + (ax === 1 ? '' : ax)] = { showticklabels: false, showgrid: false, zeroline: false, fixedrange: true };
-      layout['yaxis' + (ax === 1 ? '' : ax)] = { showticklabels: false, range: [mid - 7, mid + 7],
-        showgrid: false, zeroline: true, zerolinecolor: BORDER, zerolinewidth: 0.5, fixedrange: true };
       const row = Math.floor(i / cols), colIdx = i % cols;
+      const x0 = colIdx / cols + (colIdx ? XGAP / 2 : 0);
+      const x1 = (colIdx + 1) / cols - (colIdx < cols - 1 ? XGAP / 2 : 0);
+      const top = 1 - row * cellH;
+      layout['xaxis' + (ax === 1 ? '' : ax)] = { domain: [x0, x1], anchor: 'y' + (ax === 1 ? '' : ax),
+        showticklabels: false, showgrid: false, zeroline: false, fixedrange: true };
+      layout['yaxis' + (ax === 1 ? '' : ax)] = { domain: [top - cellH + PAD, top - LABEL], anchor: 'x' + (ax === 1 ? '' : ax),
+        showticklabels: false, range: [mid - 7, mid + 7],
+        showgrid: false, zeroline: true, zerolinecolor: BORDER, zerolinewidth: 0.5, fixedrange: true };
       layout.annotations.push({
         text: t, xref: 'paper', yref: 'paper',
-        x: (colIdx + 0.5) / cols, y: 1 - row / rowsN + 0.002, showarrow: false,
+        x: (x0 + x1) / 2, xanchor: 'center', y: top, yanchor: 'top', showarrow: false,
         font: { size: 11, color: col, weight: 700, family: FONT } });
     });
     Plotly.react('plot-traj', traces, layout, HARDEN);
