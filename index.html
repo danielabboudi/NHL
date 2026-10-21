@@ -741,8 +741,8 @@ function lightenHex(hex, mix) {
 }
 const FACTOR_DEF_COLORS = {};   // darker = offense, lighter = defense (Danny 2026-07-06)
 Object.keys(FACTOR_COLORS).forEach(f => { FACTOR_DEF_COLORS[f] = lightenHex(FACTOR_COLORS[f], 0.5); });
-const DECOMP_SUB_SPLIT = 'Each rating split into its sources &middot; darker = offense, lighter = defense';
-const DECOMP_SUB_NET = 'Each team&rsquo;s rating, split into its sources &middot; the pieces add up to the Rank number';
+const DECOMP_SUB_SPLIT = 'Each rating split into its sources \u00b7 darker = offense, lighter = defense';
+const DECOMP_SUB_NET = 'Each team\u2019s rating, split into its sources \u00b7 the pieces add up to the Rank number';
 
 function renderDecomp() {
   const rows = DATA.rankings.slice().sort((a,b) => a.rating - b.rating);
@@ -1040,7 +1040,7 @@ function teamNote(team, gName, gBackup) {
   }
   if (gName) bits.push(gName);
   if (gBackup) bits.push('<span class="qbtag">BACKUP</span>');
-  return bits.length ? bits.join(' &middot; ') : '&nbsp;';
+  return bits.length ? bits.join(' \u00b7 ') : '\u00a0';
 }
 
 // Chips: green bet signal at |edge| >= BET_EDGE prob-points (PROVISIONAL —
@@ -1317,11 +1317,11 @@ renderSchedule();
     const winner = R.margin > 0 ? H : A;
     const otherNote = !shown ? '' : (g.last_period === 'SO'
       ? ' Other = the one goal the official score gives ' + winner + ' for winning the shootout (the factors stop at overtime).'
-      : ' Other = goals in the official score that the factors don&rsquo;t cover.');
+      : ' Other = goals in the official score that the factors don\u2019t cover.');
     return '<div class="attr6-block od-block">' +
       '<div class="attr-head"><span class="slash"></span>What happened</div>' +
-      '<div class="attr-sub">Each column is that team&rsquo;s offense in the model&rsquo;s factors, in goals vs a league-average team. ' +
-        'Defense is the other column, flipped: ' + H + '&rsquo;s Goalie play was ' + fmtSigned(-fin.a, 1) + '.</div>' +
+      '<div class="attr-sub">Each column is that team\u2019s offense in the model\u2019s factors, in goals vs a league-average team. ' +
+        'Defense is the other column, flipped: ' + H + '\u2019s Goalie play was ' + fmtSigned(-fin.a, 1) + '.</div>' +
       '<table class="od-table"><thead><tr><th></th><th>' + A + '</th><th>' + H + '</th><th>Margin</th></tr></thead><tbody>' +
         body +
         '<tr class="od-tot"><th>Total</th>' + cell(R.aT) + cell(R.hT) +
@@ -1349,11 +1349,11 @@ renderSchedule();
       : '<div class="od-note">Model line re-priced after the game (no saved pre-game copy).</div>';
     return '<div class="attr6-block od-block">' +
       '<div class="attr-head"><span class="slash"></span>Versus expectation</div>' +
-      '<div class="attr-sub">Each row above vs the model&rsquo;s pre-game number for it, in goals. Bars point to the team that came out ahead.</div>' +
+      '<div class="attr-sub">Each row above vs the model\u2019s pre-game number for it, in goals. Bars point to the team that came out ahead.</div>' +
       html +
-      '<div class="attr6-total"><span>Model had ' + marginTxt(R.expTot, H, A, 1) + ' &middot; final ' +
+      '<div class="attr6-total"><span>Model had ' + marginTxt(R.expTot, H, A, 1) + ' \u00b7 final ' +
         marginTxt(R.margin, H, A, 0) + '</span><b>' + favors(R.swing, H, A) + '</b></div>' +
-      '<div class="od-note">Hot/cold finishing includes tonight&rsquo;s goalies. Other includes home ice, rest' +
+      '<div class="od-note">Hot/cold finishing includes tonight\u2019s goalies. Other includes home ice, rest' +
         (otherShown ? ', travel and the Other row.' : ' and travel.') + '</div>' +
       repriced +
     '</div>';
@@ -1409,8 +1409,8 @@ function renderForecast() {
   rows.sort((a, b) => (+b[FCST_SORT] || 0) - (+a[FCST_SORT] || 0));
   if (DATA.meta.forecast_label) {
     document.getElementById('fcst-sub').innerHTML =
-      DATA.meta.forecast_label.replace('·', '&middot;') +
-      ' &mdash; every game gets the model&rsquo;s odds, then every playoff series plays out best-of-7 in each simulated season.';
+      DATA.meta.forecast_label.replace('·', '\u00b7') +
+      ' \u2014 every game gets the model\u2019s odds, then every playoff series plays out best-of-7 in each simulated season.';
   }
   list.innerHTML = rows.map(r => {
     const c = TC[r.team] || SLATE_MID;
